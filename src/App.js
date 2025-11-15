@@ -64,31 +64,19 @@ function App() {
       <div className="Pomodoro">
         <h3 className="Stage">{cycle[currentCycleIndex].name}</h3>
         <h1 className="Timer">
-          {convertSecondsToTime(Math.floor(timeRemaining))}
+          {convertSecondsToTime(Math.ceil(timeRemaining))}
         </h1>
         <p>Next: {cycle[(currentCycleIndex + 1) % cycle.length].name}</p>
         <div className="Button-bar">
           <button
             onClick={() => {
               setRunning(!running);
-              if (timeCycleStarted === null) {
-                setTimeCycleStarted(new Date());
-              }
+              setCurrentCycleIndex(0);
+              setTimeCycleStarted(new Date());
             }}
           >
-            {running ? "Pause" : "Start"}
+            {running ? "End" : "Start"}
           </button>
-          {!running ? (
-            <button
-              onClick={() => {
-                setRunning(false);
-                setCurrentCycleIndex(0);
-                setTimeRemaining(cycle[0].time);
-              }}
-            >
-              Reset
-            </button>
-          ) : null}
           {running ? (
             <button
               onClick={() => {
