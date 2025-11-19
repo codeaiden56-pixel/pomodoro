@@ -7,8 +7,10 @@ function App() {
   const [timeRemaining, setTimeRemaining] = useState(1500);
   const [currentCycleIndex, setCurrentCycleIndex] = useState(0);
   const [timeCycleStarted, setTimeCycleStarted] = useState(null);
+  const [timePomodoroStarted, setTimePomodoroStarted] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState("");
+  const [narration, setNarration] = useState(true);
 
   const cycle = [
     { name: "Focus", time: 1500 },
@@ -21,25 +23,30 @@ function App() {
     { name: "Long Break", time: 1800 },
   ];
 
-  function convertSecondsToTime(totalSeconds) {
+  function convertSecondsToTime(totalSeconds, showHours = false) {
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
+    const hours = Math.floor(totalSeconds / 3600);
 
     const formattedMinutes = String(minutes).padStart(2, "0");
     const formattedSeconds = String(seconds).padStart(2, "0");
 
-    return `${formattedMinutes}:${formattedSeconds}`;
+    const formattedHours =  String(hours).padStart(2, "0");
+
+    return `${showHours ? formattedHours + ":" : ""}${formattedMinutes}:${formattedSeconds}`;
   }
 
-  function calculateTimeDifference(currentTime) {
-    return (currentTime.getTime() - timeCycleStarted.getTime()) / 1000;
+  function calculateTimeDifference(currentTime, startTime) {
+    return (currentTime.getTime() - startTime.getTime()) / 1000;
   }
 
   function setNextStageInCycle() {
+    if (narration) {
     let utterance = new SpeechSynthesisUtterance(
-      "Time for " + cycle[(currentCycleIndex + 1) % cycle.length].name
-    );
-    speechSynthesis.speak(utterance);
+        "Time for " + cycle[(currentCycleIndex + 1) % cycle.length].name
+      );
+      speechSynthesis.speak(utterance);
+    }
     setCurrentCycleIndex((currentCycleIndex + 1) % cycle.length);
     setTimeRemaining(cycle[(currentCycleIndex + 1) % cycle.length].time);
     setTimeCycleStarted(new Date());
@@ -49,7 +56,7 @@ function App() {
     if (running) {
       const timeoutId = setTimeout(() => {
         setTimeRemaining(
-          cycle[currentCycleIndex].time - calculateTimeDifference(new Date())
+          cycle[currentCycleIndex].time - calculateTimeDifference(new Date(), timeCycleStarted)
         );
       }, 100);
       if (timeRemaining <= 0) {
@@ -73,6 +80,7 @@ function App() {
               setRunning(!running);
               setCurrentCycleIndex(0);
               setTimeCycleStarted(new Date());
+              setTimePomodoroStarted(new Date());
             }}
           >
             {running ? "End" : "Start"}
@@ -87,6 +95,12 @@ function App() {
             </button>
           ) : null}
         </div>
+        {timePomodoroStarted ? (
+          <p className="Total-focus-time">Total Focus Time: {convertSecondsToTime(Math.ceil(calculateTimeDifference(new Date(), timePomodoroStarted)), true)}</p>
+        ) : null}
+        <button className="Narration-toggle-button" onClick={() => setNarration(!narration)}>
+          Voice: {narration ? "On" : "Off"}
+        </button>
       </div>
 
       <div className="Task-container">
@@ -116,9 +130,12 @@ function App() {
           {tasks.length > 0 ? (
             tasks.map((task, index) => <TaskCard key={index} task={task} />)
           ) : (
-            <p style={{ color: "gray", textAlign: "left" }}>No tasks</p>
+            <p style={{ color: "#A0AEC0", textAlign: "left", paddingLeft: "8px"}}>No tasks</p>
           )}
         </div>
+        <button className="Reset-tasks-button" onClick={() => setTasks([])}>
+          Reset Tasks
+        </button>
       </div>
     </div>
   );
@@ -136,7 +153,7 @@ function TaskCard({ task }) {
       <p
         style={{
           textDecorationLine: complete ? "line-through" : "",
-          color: complete ? "gray" : "black",
+          color: complete ? "#718096" : "#2D3748",
         }}
       >
         {task}
